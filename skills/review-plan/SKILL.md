@@ -1,18 +1,12 @@
 ---
 name: review-plan
-description: >
-  Review implementation plans and beads-batch JSON for structure compliance,
-  codebase alignment, dependency correctness, collision risks, and task
-  granularity. Use when the user types "/review-plan", asks to "review the
-  plan", "check the JSON", "audit the plan structure", or "validate against
-  the codebase". Accepts JSON plan files and markdown implementation plans,
-  especially plans with per-slice Task spec blocks, and emits or updates a
-  repo-local lockfile in `.beads/plan-locks/` for reviewed markdown plans.
+description: ARCHIVED — retained for a future rebuild without Beads dependencies. Do not invoke automatically. Use only when the user explicitly asks for the archived review-plan workflow.
 ---
 
-# Review Plan
+# Review Plan (Archived)
 
-Structured review of implementation plans or beads-batch JSON files. Gathers findings, then walks the user through them one-at-a-time to drive each to a decision before any edits land on disk.
+This version is retained as design material for a future replacement without
+Beads dependencies. Its legacy automation is unsupported.
 
 The core principle: **findings are not done until the user has answered for them.** Don't dump a report and stop. Don't silently mutate the plan. Walk the tree.
 
