@@ -1,0 +1,4 @@
+interface:
+  display_name: "File PR"
+  short_description: "Prepare and file a reviewer-ready pull request"
+  default_prompt: "Use $file-pr to prepare and publish the current work as a ready GitHub pull request."

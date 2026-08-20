@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babysit PR"
+  short_description: "Drive a pull request through CI and review"
+  default_prompt: "Use $babysit-pr to monitor and remediate this pull request until its bounded finish line."

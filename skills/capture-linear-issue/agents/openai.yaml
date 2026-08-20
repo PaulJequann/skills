@@ -1,0 +1,15 @@
+interface:
+  display_name: "Capture Linear Issue"
+  short_description: "Capture consistent evidence-backed Linear issues"
+  default_prompt: "Use $capture-linear-issue to capture this finding in Linear."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: true

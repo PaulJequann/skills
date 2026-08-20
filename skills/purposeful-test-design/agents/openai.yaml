@@ -1,0 +1,4 @@
+interface:
+  display_name: "Purposeful Test Design"
+  short_description: "Plan behavioral tests before implementation"
+  default_prompt: "Use $purposeful-test-design to plan focused tests for this change."

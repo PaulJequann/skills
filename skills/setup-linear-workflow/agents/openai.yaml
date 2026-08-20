@@ -1,0 +1,15 @@
+interface:
+  display_name: "Setup Linear Workflow"
+  short_description: "Configure minimal Linear issue tracking"
+  default_prompt: "Use $setup-linear-workflow to inspect and configure Linear for this repository."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: false

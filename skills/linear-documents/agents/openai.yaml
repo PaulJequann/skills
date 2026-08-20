@@ -1,0 +1,4 @@
+interface:
+  display_name: "Linear Documents"
+  short_description: "Read and publish durable Linear documents"
+  default_prompt: "Use $linear-documents to read or publish a Markdown document in Linear."

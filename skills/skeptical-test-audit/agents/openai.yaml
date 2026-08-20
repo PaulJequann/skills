@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skeptical Test Audit"
+  short_description: "Assess tests against concrete regressions"
+  default_prompt: "Use $skeptical-test-audit to review the tests changed for this work."

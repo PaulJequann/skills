@@ -1,0 +1,15 @@
+interface:
+  display_name: "Investigate Linear Issue"
+  short_description: "Verify and prepare Linear issues for implementation"
+  default_prompt: "Use $investigate-linear-issue to investigate the referenced Linear issue without implementing it."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: true
