@@ -3,13 +3,15 @@
 set -eu
 
 usage() {
-  printf 'usage: %s <artifact.html|artifact.md>\n' "${0##*/}" >&2
+  printf 'usage: %s <artifact.html|artifact.md> [viewer-url]\n' "${0##*/}" >&2
   exit 2
 }
 
-[ "$#" -eq 1 ] || usage
+[ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage
 
 artifact=$1
+viewer_url=${2-}
+base_url='https://stashbox.local.bysliek.com'
 
 if [ ! -f "$artifact" ] || [ ! -r "$artifact" ]; then
   printf 'stashbox: file is not readable: %s\n' "$artifact" >&2
@@ -49,19 +51,65 @@ for command_name in curl jq; do
   fi
 done
 
-response=$(curl --fail-with-body --silent --show-error \
-  --data-binary "@$artifact" \
-  -H "Content-Type: $content_type" \
-  -H "X-Stash-Filename: $filename" \
-  'https://stashbox.local.bysliek.com/api/stashes')
+if [ -z "$viewer_url" ]; then
+  viewer_url=$(sed -n \
+    's@.*<!--[[:space:]]*Stashbox:[[:space:]]*\(https://stashbox\.local\.bysliek\.com/[^[:space:]>]*\)[[:space:]]*-->.*@\1@p' \
+    "$artifact" | sed -n '1p')
+fi
+
+if [ -n "$viewer_url" ]; then
+  stash_id=$(printf '%s' "$viewer_url" | jq -Rer \
+    'capture("^https://stashbox\\.local\\.bysliek\\.com/(?<id>[A-Za-z0-9_-]+)$").id') || {
+    printf 'stashbox: expected a stable Stashbox viewer URL: %s\n' "$viewer_url" >&2
+    exit 2
+  }
+  api_url="$base_url/api/stashes/$stash_id"
+  headers=$(curl --fail-with-body --silent --show-error \
+    --dump-header - --output /dev/null "$api_url")
+  etag=$(printf '%s' "$headers" | awk '
+    BEGIN { IGNORECASE = 1 }
+    /^etag:/ { sub(/\r$/, "", $2); value = $2 }
+    END { print value }
+  ')
+  if [ -z "$etag" ]; then
+    printf 'stashbox: metadata did not contain an ETag; refusing an unsafe update\n' >&2
+    exit 1
+  fi
+  response=$(curl --fail-with-body --silent --show-error \
+    --request PUT \
+    --data-binary "@$artifact" \
+    -H "Content-Type: $content_type" \
+    -H "X-Stash-Filename: $filename" \
+    -H "If-Match: $etag" \
+    "$api_url")
+else
+  response=$(curl --fail-with-body --silent --show-error \
+    --data-binary "@$artifact" \
+    -H "Content-Type: $content_type" \
+    -H "X-Stash-Filename: $filename" \
+    "$base_url/api/stashes")
+fi
 
 url=$(printf '%s' "$response" | jq -er '
   .url
   | strings
-  | select(test("^https://stashbox\\.local\\.bysliek\\.com/"))
+  | select(test("^https://stashbox\\.local\\.bysliek\\.com/[A-Za-z0-9_-]+$"))
 ') || {
   printf 'stashbox: response did not contain a valid viewer URL\n' >&2
   exit 1
 }
+
+revision=$(printf '%s' "$response" | jq -er '.revision | numbers') || {
+  printf 'stashbox: response did not contain a revision number\n' >&2
+  exit 1
+}
+
+if [ -z "$viewer_url" ]; then
+  printf 'Created revision %s\n' "$revision" >&2
+elif [ "$(printf '%s' "$response" | jq -r '.changed // false')" = 'true' ]; then
+  printf 'Published revision %s\n' "$revision" >&2
+else
+  printf 'Already current at revision %s\n' "$revision" >&2
+fi
 
 printf '%s\n' "$url"
