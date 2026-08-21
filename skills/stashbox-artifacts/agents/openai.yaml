@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stashbox Artifacts"
+  short_description: "Publish HTML and Markdown artifact links"
+  default_prompt: "Use $stashbox-artifacts to publish this completed HTML or Markdown artifact."
