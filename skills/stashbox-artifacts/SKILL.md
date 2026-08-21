@@ -12,7 +12,10 @@ history while its viewer URL stays fixed.
 ## Deliver an artifact
 
 1. Finish and inspect the local `.html`, `.htm`, `.md`, or `.markdown` file.
-   HTML must be self-contained because Stashbox does not bundle sibling assets.
+   Give the artifact a meaningful document title: HTML includes a non-placeholder
+   `<title>` in `<head>`, and Markdown includes a level-one heading. Keep an
+   HTML `<h1>` aligned with its document title when both are present. HTML must
+   be self-contained because Stashbox does not bundle sibling assets.
 2. Honor an explicit local-only or no-upload instruction by returning the local
    path and stopping.
 3. Run `scripts/upload.sh <path> [viewer-url]` from this skill:
