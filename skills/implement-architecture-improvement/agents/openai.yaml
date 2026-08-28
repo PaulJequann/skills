@@ -1,0 +1,15 @@
+interface:
+  display_name: "Implement Architecture Improvement"
+  short_description: "Implement one ready architecture issue and PR"
+  default_prompt: "Use $implement-architecture-improvement to implement and deliver one ready architecture issue in this repository."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: false

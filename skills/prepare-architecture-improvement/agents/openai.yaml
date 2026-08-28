@@ -1,0 +1,15 @@
+interface:
+  display_name: "Prepare Architecture Improvement"
+  short_description: "Turn one architecture candidate into ready work"
+  default_prompt: "Use $prepare-architecture-improvement to prepare one architecture candidate in this repository."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: false

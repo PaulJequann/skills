@@ -1,0 +1,15 @@
+interface:
+  display_name: "Find Architecture Improvement"
+  short_description: "Capture one architecture candidate with evidence"
+  default_prompt: "Use $find-architecture-improvement to inspect this repository and capture its strongest untracked architecture candidate."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "linear"
+      description: "Authenticated Linear MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.linear.app/mcp"
+
+policy:
+  allow_implicit_invocation: false
