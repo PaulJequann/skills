@@ -38,17 +38,18 @@ Use a named issue when provided. Otherwise:
 
 1. Resolve the current repository from its Git remote and exact Linear
    repository label.
-2. Find open issues with `Readiness/Ready for implementation` that contain an
-   `Architecture candidate report` link and a newest
-   `## Authoritative implementation brief` comment.
+2. Find open issues with `Readiness/Ready for implementation` whose bodies
+   contain an `Architecture candidate report` link and a complete current
+   implementation contract.
 3. Exclude blocked issues, parent index issues, and issues waiting on a human
    decision.
 4. Prefer explicit priority, then the oldest unblocked issue. When approved
    child issues exist, select the first unblocked ready child rather than its
    parent.
 
-Read the complete issue, comments, relationships, linked documents, Stashbox
-report, and readiness history. Find an existing branch or open PR linked to the
+Read the canonical body first, then relationships, linked documents, the
+Stashbox report, and readiness history. Read comments when provenance or
+unresolved discussion matters. Find an existing branch or open PR linked to the
 issue before creating anything. If one exists, skip implementation and proceed
 directly to PR babysitting.
 
@@ -58,9 +59,9 @@ finish with `No work`.
 ## 2. Revalidate the implementation contract
 
 Read applicable repository instructions, domain documents, ADRs, PR templates,
-current Git status, default branch, and remote state. Treat the newest
-authoritative implementation brief as the scope contract. Earlier reports and
-discussion provide rationale but cannot silently expand it.
+current Git status, default branch, and remote state. Treat the Linear issue
+body as the scope contract. Comments and earlier reports provide history and
+rationale but cannot silently expand it.
 
 Verify against the current default-branch head:
 
@@ -71,8 +72,8 @@ Verify against the current default-branch head:
 - blockers are complete; and
 - every required behavior has a practical verification path.
 
-If drift invalidates readiness, make no product edits. Load and follow
-`investigate-linear-issue`, persist the exact next evidence under
+If drift invalidates readiness, make no product edits. Load and follow the
+investigation mode of `linear`, persist the exact next evidence under
 `Readiness/Needs investigation`, and finish with `Returned to investigation`.
 If a product, architecture, security, privacy, compatibility, or scope decision
 remains, persist `Readiness/Needs decision` and finish without implementation.

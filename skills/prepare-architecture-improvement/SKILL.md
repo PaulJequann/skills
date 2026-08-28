@@ -122,8 +122,8 @@ or the remaining decision and its options are explicit.
 
 ## 5. Determine readiness and work shape
 
-Load and follow `investigate-linear-issue`, including its investigation report
-and readiness rules.
+Load and follow the investigation mode of `linear`, including its canonical
+body and readiness rules.
 
 Mark the issue ready only when the current and desired behavior, module
 ownership, interface contract, edge and failure behavior, migration scope,
@@ -144,25 +144,25 @@ Complete this step with exactly one readiness or disposition outcome.
 
 ## 6. Persist the result
 
-For `Ready`, `Needs decision`, or `Needs investigation`, post one investigation
-comment using the established template and replace the readiness label with the
-selected outcome. A ready result must contain the newest section headed
-`## Authoritative implementation brief`, including durable acceptance criteria
-and the test-evidence matrix. Evidence may name current paths and revisions;
-the implementation contract must not depend on line numbers or a file-by-file
-edit recipe.
+For `Ready`, `Needs decision`, or `Needs investigation`, rewrite the issue body
+as the canonical current handoff, replace the readiness label with the selected
+outcome, and add one concise dated investigation sign-off comment. A ready body
+must include durable acceptance criteria and the test-evidence matrix. Evidence
+may name current paths and revisions; the implementation contract must not
+depend on line numbers or a file-by-file edit recipe.
 
-For `Disposition required`, post the verified finding and set
-`Readiness/Needs decision` so disposal remains a human action.
+For `Disposition required`, update the body with the verified finding, add the
+sign-off comment, and set `Readiness/Needs decision` so disposal remains a human
+action.
 
 For `Approval required`, return the complete draft investigation result and
 numbered decomposition proposal without changing Linear. Do not publish a
 partial comment, readiness transition, child issue, or relationship before the
 user approves the granularity and blocker edges.
 
-Re-read every changed Linear record. Verify the exact comment, readiness label,
-issue identity, and unchanged status, priority, assignee, project, cycle, and
-relationships.
+Re-read every changed Linear record. Verify the canonical body, sign-off
+comment, readiness label, issue identity, and unchanged status, priority,
+assignee, project, cycle, and relationships.
 
 Complete this step only when the intended Linear result is verified or the
 approval-gated proposal is complete and nothing was written.

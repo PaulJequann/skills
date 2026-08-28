@@ -1,6 +1,6 @@
 ---
 name: setup-linear-workflow
-description: Configure or verify the minimal Linear workflow used by the global Linear issue skills. Use only when the user explicitly asks to set up Linear, onboard a repository, repair its Linear routing, or inspect whether the workflow is configured correctly.
+description: Configure or verify the minimal Linear workflow used by the global Linear skill. Use only when the user explicitly asks to set up Linear, onboard a repository, repair its Linear routing, or inspect whether the workflow is configured correctly.
 ---
 
 # Setup Linear Workflow
@@ -111,8 +111,7 @@ Propose this stable block for the repository's existing agent instruction file:
 Issues are tracked in Linear under team `DEV`.
 
 - Repository label: `Repository/<Repository>`
-- Use the global `capture-linear-issue` skill to create issues.
-- Use the global `investigate-linear-issue` skill to investigate issues.
+- Use the global `linear` skill for Linear issues, documents, and workflow operations.
 - Do not create repository-local backlogs, task databases, or issue caches.
 - Do not implement issues marked `Readiness/Needs investigation` unless the
   user explicitly overrides the workflow.

@@ -220,8 +220,8 @@ Complete this step only when Stashbox reports success with a stable viewer URL.
 
 ## 8. Create the Linear issue
 
-Load and follow `capture-linear-issue`, including its routing, duplicate search,
-template, and verification rules. Create exactly one issue with:
+Load and follow the capture mode of `linear`, including its routing, duplicate
+search, body template, and verification rules. Create exactly one issue with:
 
 - status `Backlog`;
 - readiness `Needs investigation`;

@@ -1,7 +1,7 @@
 interface:
-  display_name: "Investigate Linear Issue"
-  short_description: "Verify and prepare Linear issues for implementation"
-  default_prompt: "Use $investigate-linear-issue to investigate the referenced Linear issue without implementing it."
+  display_name: "Linear"
+  short_description: "Read, create, investigate, and update Linear work"
+  default_prompt: "Use $linear to handle this Linear request and keep the issue body current."
 
 dependencies:
   tools:
