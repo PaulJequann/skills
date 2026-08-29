@@ -55,7 +55,7 @@ Inspect the canonical base repository rather than trusting a fork or local remot
 - formal reviews and inline review comments; and
 - GraphQL review threads, including resolution, outdated state, and the commit each thread targets.
 
-Do not treat an acknowledgement that a bot started work as a completed review. Do not treat “no checks found” as green. Green checks or reviews on an older head are evidence about that head, not the current one.
+Do not treat an acknowledgement that a bot started work as a completed review. Do not treat bot quota or usage-limit notices—specifically Codex security review messages such as `You have reached your Codex usage limits for security reviews`—as review completion or failure of the PR. Ignore the security review usage-limit comment and wait for the actual code review to complete. Do not treat “no checks found” as green. Green checks or reviews on an older head are evidence about that head, not the current one.
 
 After every push, re-read the remote head SHA and reset monitoring to that exact head.
 
@@ -87,7 +87,7 @@ Classify each finding:
 | Valid, out of scope, and release-blocking or high impact | Stop and bring the decision to the user with impact, evidence, and a recommendation. Do not call the PR ready. |
 | Unclear or decision-heavy | Investigate as far as possible, then ask the user only for the unresolved decision. |
 
-Do not grow the PR merely to make every reviewer suggestion disappear. Do not create backlog noise from speculative or trivial comments.
+Do not grow the PR merely to make every reviewer suggestion disappear. Do not create backlog noise from speculative or trivial comments. Ignore automated usage or quota notices (such as Codex security review limit messages); they are not code review findings or review completion signals.
 
 Human-authored feedback deserves extra care. Address routine requested fixes, but do not dismiss a human review or automatically ping a human reviewer unless the repository's established workflow calls for it.
 
@@ -116,10 +116,13 @@ visible or acknowledged for that head.
    it does, set `initial_review = pending` for the current head. An empty
    post-creation readback remains `pending`.
 2. Inspect current-head checks, Actions/jobs, comments, review metadata, and
-   configured trigger evidence. Use the repository's documented bounded
-   review-start interval when available; otherwise use one normal review-start
-   polling interval. Transition to `active` when an automation run or request
-   is visible, and to `terminal` when the review completes.
+   configured trigger evidence (e.g., the `Codex Review Summary` comment showing
+   `📝 Code Review` in progress, or 👀 reactions). A secondary notice like a Codex
+   security review usage-limit error (`You have reached your Codex usage limits for security reviews`)
+   often arrives immediately before the code review starts; ignore it and remain
+   in `active` (or `pending`). Transition to `terminal` only when the actual code
+   review completes (e.g. `Code Review` marked completed in the summary table, formal
+   review submitted, or 👍 reaction).
 3. If the automation path is absent, or is present but failed to launch after
    that bounded diagnostic wait, verify that no equivalent request is pending.
    Only then use the repository-established explicit trigger and record the
@@ -155,6 +158,8 @@ Use this default state machine:
 Use the repository's configured reviewer and trigger; do not silently
 substitute another reviewer. If feedback arrives for a stale head, validate
 whether it still applies to the current head before acting.
+
+When monitoring Codex, PR creation or `@codex review` triggers both a security review and a code review. If the security review posts an immediate usage-limit notice (`You have reached your Codex usage limits for security reviews`), ignore it completely and continue waiting for the code review to complete.
 
 An explicit caller policy replaces the default numeric limit. For example, “until all reviews are green” authorizes further useful cycles, while “CI only” authorizes none. Even under an unlimited loop, stop for genuine product decisions, release-blocking out-of-scope discoveries, unsafe history changes, unavailable credentials, or a repeated non-progressing loop.
 

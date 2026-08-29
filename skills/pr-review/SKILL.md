@@ -85,7 +85,7 @@ look for patterns like:
 ### Step 4 — Filter and deduplicate
 
 - Keep only comments from the PR's reviewers/bots that contain actual findings
-- Skip: merge notifications, CI status posts, "LGTM" approvals, empty bodies
+- Skip: merge notifications, CI status posts, "LGTM" approvals, empty bodies, bot quota/usage-limit notices (e.g. `You have reached your Codex usage limits for security reviews`)
 - If the same finding appears in both the top-level summary and as an inline comment,
   keep the inline version (has file/line context)
 
