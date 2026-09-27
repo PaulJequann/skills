@@ -1,0 +1,12 @@
+interface:
+  display_name: "Mobbin research"
+  short_description: "Study real mobile and web UI references, then build from them"
+  default_prompt: "Use $mobbin-usage to research real screens on Mobbin, then hand the findings to mobbin-app-design."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "mobbin"
+      description: "Mobbin, the UI and UX design reference library for mobile apps and websites"
+      transport: "streamable_http"
+      url: "https://api.mobbin.com/mcp"
