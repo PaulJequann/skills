@@ -1,53 +1,66 @@
 ---
 name: skeptical-test-audit
-description: Review added or changed automated tests for whether they catch concrete realistic regressions. Use when a user asks to audit, evaluate, prune, review, or improve tests for a task, issue, branch, pull request, or diff. Inspect the production change and existing coverage, then report Keep, Improve, or Remove for every test without editing tests unless asked.
+description: Skeptically audit automated tests by the regression each one catches. Use when reviewing tests for a change, or when pruning a suite that feels bloated, ceremonial, or overtested.
 ---
 
 # Skeptical Test Audit
 
-Audit tests by the defect they would detect, not by coverage, passing status, or the number of assertions.
+Judge each test by the defect it catches, not by coverage, passing status, or assertion count. The burden of proof is on keeping: a test must earn Keep, the harsher verdict wins a tie, and tests written in this session get no benefit of the doubt.
 
-## Gather evidence first
+## 1. Gather evidence
 
-1. Read the task or issue acceptance criteria, the production diff, and all added or changed tests.
-2. Inspect the relevant production behavior and nearby existing tests. Establish whether the named behavior actually reaches the asserted result; do not trust test names.
-3. Check fixtures against production constraints such as dates, authorization, precedence, serialization, retries, and real adapter semantics.
-4. Do not modify, delete, quarantine, or add tests during a review unless the user explicitly asks for changes.
+1. Read the acceptance criteria, the production diff, and every test in scope: the change's added or changed tests, or the suite the user names, plus changed shared fixtures, fakes, and helpers.
+2. Trace the production behavior and nearby existing tests until you can say whether each test's named behavior actually reaches its assertion.
+3. When a test claims to guard a specific protection, such as a recheck, lock, cancellation mask, filter, or cleanup, mutate it: remove the protection in a scratch copy or stash, confirm the test fails, then restore and verify the restore. Every "would fail" claim rests on a failure you observed.
 
-## Judge each test
+## 2. Judge each test
 
-For every changed test, report:
+Done when every test in scope, counted as one test function or case, has a row:
 
-| Test | Behavior / contract proved | Plausible defect caught | Verdict | Evidence and recommendation |
+| Test | Contract proved | Fails only if | Verdict | Evidence and recommendation |
 | --- | --- | --- | --- | --- |
 
-Use these verdicts:
+- **Test**: the verbatim test name.
+- **Fails only if**: `<incorrect implementation>` → `<harmful result>` for `<caller or user>`, naming a defect that no sibling or existing test also catches.
+- **Verdict**: the bare word.
 
-- **Keep** — fails for a concrete, plausible regression and asserts the right observable outcome.
-- **Improve** — targets a worthwhile behavior but has a weak oracle, unrepresentative fixture, brittle boundary, misleading name, unnecessary coupling, or incomplete failure case. Give the smallest specific repair.
-- **Remove** — high-confidence tautology, duplicate, construction/property echo, framework/config wiring check without an application contract, fake-owned test, coverage-only test, or removed-behavior guard. State the existing evidence that makes it safe to remove.
+Verdicts:
 
-For a retained test, explicitly finish this statement:
+- **Keep**: earned a unique Fails-only-if, asserts the right observable outcome, and needs no edit, not even a cosmetic one.
+- **Improve**: worthwhile behavior with a weak oracle, unrepresentative fixture, brittle boundary, misleading name, unnecessary coupling, or incomplete failure case. Give the smallest repair to the existing test.
+- **Merge**: its defect is caught by siblings. Name the surviving test or table-driven replacement and confirm it covers every merged input case.
+- **Remove**: catches no plausible defect; see What to flag. State the evidence, naming the surviving test for a duplicate. Tests the diff already deletes are "Remove (already applied)".
 
-> It would fail if `<incorrect implementation>` caused `<harmful result>` for `<caller or user>`.
+## 3. Find gaps
 
-## Defaults and exceptions
+List each new branch, toggle, filter, and acceptance criterion in the production change, including how it combines with existing logic such as indexing, pagination, or ordering. Map each to the test that proves it; the unmapped ones are gaps.
 
-- Prefer outcomes through the narrowest stable contract. A public user API is often right, but direct domain-function tests are valid when that function is the stable contract.
-- Flag assertions of private state or incidental implementation details when a refactor could preserve behavior but break the test.
-- Flag mock-call assertions that merely mirror internal wiring. Keep them when the absence, presence, order, or payload of an external interaction is a security, cost, audit, delivery, or compatibility contract.
-- Flag fixed sleeps, uncontrolled clocks, broad snapshots, vague names, assertion roulette, and multi-behavior tests. Do not condemn a multi-step test that proves one real workflow.
-- Treat endpoint/framework smoke coverage and visual snapshots as specialized tests. Keep only when they name and prove the integration, compatibility, or visual contract that justifies their maintenance cost.
-- Do not equate a green integration test with coverage of its claimed behavior. Validate that its fixture forces the production decision under test.
-- Flag removed-behavior guards: tests or assertions whose only job is proving a deleted feature stays deleted. They fail only when someone deliberately reintroduces the feature, and then they are edited along with that design change, so they catch no plausible defect. Keep an absence check only when the absence is itself a security, privacy, cost, or compatibility contract, such as a secret never logged or a retired endpoint that must keep rejecting calls.
-- Keep fixtures minimal. Flag fields that the test's contract does not need, especially leftovers from removed features that make the fixture implicitly assert their absence. When a feature is removed, recommend deleting its assertions and stripping its fixture fields, not flipping them into "stays hidden" checks.
+## 4. Apply changes
 
-## Finish with a decision summary
+Only when the user asks you to prune, fix, or apply; otherwise leave every test untouched.
 
-Report counts for Keep, Improve, and Remove, then list:
+1. Finish the verdict table first.
+2. Edit only audited tests: apply Remove and Merge, make the stated repair for each Improve, and strip fixture fields and fake hooks nothing uses.
+3. Assert against real output: run the code and copy the actual message or value. Report any loosened assertion as a weakening.
+4. Mark applied verdicts, such as "Merge (applied)".
 
-- the highest-risk unproven behavior;
-- the smallest changes that would make the suite trustworthy;
-- any proposed removal that needs user approval before deletion.
+## 5. Summarize
 
-Do not recommend new dependencies or broad coverage targets merely to score the suite. Suggest focused mutation or fault-injection experiments only when they would resolve a specific uncertainty about a critical behavior.
+Deliver the table and this summary in your reply: counts for Keep, Improve, Merge, and Remove, the before/after test count, then:
+
+- the highest-risk gap;
+- the smallest changes that make the suite trustworthy, strengthening or merging existing tests, with a new test proposed only for the highest-risk gap;
+- any removal awaiting user approval.
+
+## What to flag
+
+- **Tautologies and echoes**: tests that restate construction, property values, or the fake's own behavior, and coverage-only tests.
+- **Change detectors**: tests that read source, config, or template text and assert substrings, or restate declared literals. They fail on every intentional edit and on no defect; frequent co-change with the file under test is supporting evidence.
+- **Removed-behavior guards**: tests or assertions whose only job is proving a deleted feature stays deleted. They fail only when someone deliberately reintroduces the feature, and are edited along with that design change. When a feature is removed, delete its assertions and fixture fields outright. An absence check earns Keep only when the absence is a security, privacy, cost, or compatibility contract, such as a secret never logged or a retired endpoint that keeps rejecting calls.
+- **Bug-fix regression tests** earn Keep only by covering a behavior gap the other tests leave. A bug that shipped is strong evidence of such a gap; reproducing a bug found during implementation is not.
+- **Fixtures** must be realistic and minimal. Cite the producing code before calling a state realistic or impossible; a fixture production cannot produce makes the test Improve even when another test covers the real shape. Every field serves the test's contract. An integration test's fixture must force the production decision under test.
+- **Fakes** that add suspension points, failure modes, or timing the real adapter cannot produce.
+- **Implementation coupling**: assertions on private state or incidental details a behavior-preserving refactor would break. Mock-call assertions earn Keep only when the absence, presence, order, or payload of an external interaction is a security, cost, audit, delivery, or compatibility contract.
+- **Contract level**: prefer the narrowest stable contract; a domain function is valid when it is the stable contract.
+- **Specialized tests**: endpoint/framework smoke tests and visual snapshots earn Keep only by naming and proving the integration, compatibility, or visual contract that justifies their maintenance.
+- **Smells**: fixed sleeps, uncontrolled clocks, broad snapshots, vague names, assertion roulette, and multi-behavior tests. A multi-step test proving one real workflow counts as one behavior.
