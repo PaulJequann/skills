@@ -16,10 +16,13 @@ Own an existing pull request through CI and automated review. Work autonomously 
    - run appropriate verification;
    - commit and push remediation;
    - keep the PR title and body accurate;
-   - reply to review findings with evidence; and
-   - resolve fully addressed automated-review threads.
+   - reply to review findings with evidence;
+   - resolve fully addressed automated-review threads; and
+   - post the repository's review trigger, such as `@codex review`, for the
+     one budgeted follow-up cycle. This holds even after `file-pr`, which
+     requests reviews only when asked.
 3. Do not stop merely because changes are uncommitted or unpushed. Those are normal intermediate states within this workflow.
-4. Keep merge, deployment, branch deletion, and a third automated review cycle outside the default authority. Perform them only when the user explicitly asks.
+4. Keep merge, deployment, branch deletion, and a third automated review cycle outside the default authority. Perform them only when the user explicitly asks; an authorized merge follows **Merge when authorized**.
 5. Honor caller overrides such as CI-only monitoring, no rereview, a numeric review limit, a deadline, or “continue until every review is green.” Scope and safety boundaries still apply.
 
 ## Establish scope and review budget
@@ -34,16 +37,16 @@ Record:
 - automatic-review trigger state, review cycles already requested or completed;
 - the caller's loop policy.
 
-Do not reset the budget when this skill is invoked again. A review cycle is the
-collection of configured automated-review feedback for one head commit, not
-each comment or each reviewer.
+A review cycle is the collection of configured automated-review feedback for
+one head commit, not each comment or each reviewer. The budget never resets,
+and memory of it does not survive compaction or a fresh invocation. Rebuild the
+count from the PR itself: the heads that received a completed automated review,
+and the explicit trigger comments already posted.
 
 The default budget is:
 
 1. the initial automated review cycle, whether automatic, already present, or explicitly requested; and
 2. at most one additional automated review cycle after substantive remediation.
-
-After fixing findings from that additional cycle, push and validate CI, then stop for human approval before requesting a third cycle. The final head may therefore be intentionally unre-reviewed; state that plainly in the handoff.
 
 ## Inspect authoritative PR state
 
@@ -55,7 +58,25 @@ Inspect the canonical base repository rather than trusting a fork or local remot
 - formal reviews and inline review comments; and
 - GraphQL review threads, including resolution, outdated state, and the commit each thread targets.
 
-Do not treat an acknowledgement that a bot started work as a completed review. Do not treat bot quota or usage-limit notices—specifically Codex security review messages such as `You have reached your Codex usage limits for security reviews`—as review completion or failure of the PR. Ignore the security review usage-limit comment and wait for the actual code review to complete. Do not treat “no checks found” as green. Green checks or reviews on an older head are evidence about that head, not the current one.
+Do not treat an acknowledgement that a bot started work as a completed review. Count only reviews, comments, and reactions authored by the configured reviewer: your own thread replies create `COMMENTED` reviews on the current head. Do not treat “no checks found” as green. Green checks or reviews on an older head are evidence about that head, not the current one.
+
+### Codex review state
+
+When the configured reviewer is Codex, PR creation or `@codex review` starts two
+reviews of the head: a security review and a code review. The code review is
+the one the review loop waits for.
+
+- The code review is complete for a head when the summary comment's
+  `📝 Code Review` row shows it completed for that head, the bot submits a
+  formal review, or it reacts 👍. The hidden JSON `status` and `headSha` in the
+  summary comment track only the security review.
+- A security-review usage-limit notice is neither a finding nor a completion.
+  Ignore it and keep waiting for the code review. Its text:
+  `You have reached your Codex usage limits for security reviews`.
+- Completed is not clean. A cycle is clean only when the head has a 👍 or no
+  new review threads; read that head's threads before calling it clean.
+- Match the bot under both logins: `chatgpt-codex-connector` in GraphQL and
+  `chatgpt-codex-connector[bot]` in REST.
 
 After every push, re-read the remote head SHA and reset monitoring to that exact head.
 
@@ -87,7 +108,7 @@ Classify each finding:
 | Valid, out of scope, and release-blocking or high impact | Stop and bring the decision to the user with impact, evidence, and a recommendation. Do not call the PR ready. |
 | Unclear or decision-heavy | Investigate as far as possible, then ask the user only for the unresolved decision. |
 
-Do not grow the PR merely to make every reviewer suggestion disappear. Do not create backlog noise from speculative or trivial comments. Ignore automated usage or quota notices (such as Codex security review limit messages); they are not code review findings or review completion signals.
+Do not grow the PR merely to make every reviewer suggestion disappear. Do not create backlog noise from speculative or trivial comments.
 
 Human-authored feedback deserves extra care. Address routine requested fixes, but do not dismiss a human review or automatically ping a human reviewer unless the repository's established workflow calls for it.
 
@@ -99,11 +120,11 @@ Human-authored feedback deserves extra care. Address routine requested fixes, bu
 4. Run targeted regression checks and the repository's required final verification.
 5. Stage only intended files, create a clear commit, and push it. Preserve repository history conventions; do not rewrite shared history without necessity.
 6. Reconcile the PR title and body when remediation changes the outcome, scope, verification, or accepted limitations.
-7. Reply to each finding with the disposition and concrete evidence, such as the fixing commit, test result, governing decision, or follow-up issue.
-8. Resolve an automated review thread only after its finding is fixed, disproved, stale, or deliberately deferred with a durable disposition.
+7. Reply inside each finding's review thread with the disposition and concrete evidence, such as the fixing commit, test result, governing decision, or follow-up issue. A PR-level summary comment does not count as a reply.
+8. Resolve each automated review thread by its ID, after replying to it, and only once its finding is fixed, disproved, stale, or deliberately deferred with a durable disposition.
 9. Read the new remote head and begin current-head CI monitoring again.
 
-Keep concise progress updates flowing while checks or reviews are pending. Continue monitoring instead of handing the waiting work back to the user.
+While checks or reviews are pending, keep monitoring instead of handing the waiting work back to the user. Post an update when state changes, such as a review starting, findings arriving, or a push landing, not once per poll.
 
 ## Gate the initial review
 
@@ -116,13 +137,9 @@ visible or acknowledged for that head.
    it does, set `initial_review = pending` for the current head. An empty
    post-creation readback remains `pending`.
 2. Inspect current-head checks, Actions/jobs, comments, review metadata, and
-   configured trigger evidence (e.g., the `Codex Review Summary` comment showing
-   `📝 Code Review` in progress, or 👀 reactions). A secondary notice like a Codex
-   security review usage-limit error (`You have reached your Codex usage limits for security reviews`)
-   often arrives immediately before the code review starts; ignore it and remain
-   in `active` (or `pending`). Transition to `terminal` only when the actual code
-   review completes (e.g. `Code Review` marked completed in the summary table, formal
-   review submitted, or 👍 reaction).
+   configured trigger evidence, such as 👀 reactions or a `📝 Code Review` row
+   in progress. Transition to `terminal` only when the code review completes,
+   read for Codex by **Codex review state**.
 3. If the automation path is absent, or is present but failed to launch after
    that bounded diagnostic wait, verify that no equivalent request is pending.
    Only then use the repository-established explicit trigger and record the
@@ -146,20 +163,20 @@ Use this default state machine:
    useful. An initial clean review, false positives resolved by evidence, or a
    narrow CI-only correction may leave the follow-up cycle unused. The step is
    complete when the follow-up request is either intentionally unused or
-   visible for the new head.
-4. Validate and batch-remediate follow-up findings, then push and finish
-   current-head CI. This step is complete when CI is terminal and every
-   follow-up finding has a disposition.
-5. Hand the stable PR to the user for human approval without starting a third
-   automated review under the default policy. The workflow is complete when
-   the handoff names the exact head, CI state, cycle history, and next human
-   action.
+   visible for the new head. Before posting the trigger, confirm from the PR
+   that the follow-up cycle is unused.
+4. See a requested follow-up review through to terminal, even when the PR
+   already looks ready. Validate and batch-remediate its findings, then push
+   and finish current-head CI. This step is complete when CI is terminal and
+   every follow-up finding has a disposition.
+5. Hand the stable PR to the user for human approval, or merge it under
+   **Merge when authorized**, without starting a third automated review under
+   the default policy. The workflow is complete when the handoff names the
+   exact head, CI state, cycle history, and next human action.
 
 Use the repository's configured reviewer and trigger; do not silently
 substitute another reviewer. If feedback arrives for a stale head, validate
 whether it still applies to the current head before acting.
-
-When monitoring Codex, PR creation or `@codex review` triggers both a security review and a code review. If the security review posts an immediate usage-limit notice (`You have reached your Codex usage limits for security reviews`), ignore it completely and continue waiting for the code review to complete.
 
 An explicit caller policy replaces the default numeric limit. For example, “until all reviews are green” authorizes further useful cycles, while “CI only” authorizes none. Even under an unlimited loop, stop for genuine product decisions, release-blocking out-of-scope discoveries, unsafe history changes, unavailable credentials, or a repeated non-progressing loop.
 
@@ -173,8 +190,28 @@ Before handing off, audit the exact remote head:
 - expected skipped or neutral checks are explained;
 - no known actionable automated-review thread is left without a disposition;
 - review findings have been fixed, disproved, or durably deferred;
+- out-of-scope findings kept out of the PR are listed or linked as issues;
 - the title and body still describe the actual change and verification;
 - the review budget and any intentionally unre-reviewed final head are explicit; and
 - any remaining human approval or decision is named precisely.
 
-Finish with the PR link, exact head, CI state, review-cycle history, remediation summary, deferred issues, and the single next human action. Do not merge the PR unless the user separately authorized merging.
+Finish with the PR link, exact head, CI state, review-cycle history, each finding with its fix or disposition in one line, deferred issues, and the single next human action. A count such as "3 findings fixed" does not replace the list. The handoff is owed in full even when merge is authorized or other work is in flight.
+
+## Merge when authorized
+
+When the user authorized merging, such as "merge when ready", finish the audit
+and handoff first. Then compare the audited head with the last head a completed
+automated review saw. The follow-up cycle usually finds something, so an
+unreviewed final head is the normal case.
+
+- **Only remediation since the last review**, meaning fixes for review findings
+  or CI: merge with `gh pr merge <number> --match-head-commit <audited head>`,
+  using the repository's merge method. Delete the branch when the user asked.
+  Then fast-forward the local base branch; if it has diverged, such as holding
+  the pre-squash commits, say so and ask before resetting it.
+- **New behavior or scope since the last review**, such as work the user added
+  mid-babysit: stop before merging. Name the unreviewed change by files and
+  lines, and ask whether to merge it or review it first.
+
+Either way, the final message states that the merged head was not re-reviewed
+when that is true.
