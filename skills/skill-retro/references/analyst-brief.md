@@ -10,7 +10,8 @@ every claim must point back to the transcript.
 - The transcripts assigned to you. Each header names the agent, the session
   start, the `era` (`pre` or `post` the skill's last commit), the `origin`
   entry point, the detection `signals`, and the `source` files.
-- The path to write your report to.
+- The path to write your report to, the manifest path, and a work directory
+  of your own for any scratch files.
 - The skill's `SKILL.md` path and the skills repo path. For a `pre` session,
   read the version that was live at its start:
   `git -C <repo> log --format='%h %cI' -- skills/<skill>/SKILL.md`, then
@@ -18,8 +19,9 @@ every claim must point back to the transcript.
 
 Transcripts are condensed. User and assistant text survive throughout. Tool
 calls and outputs survive in a window after each skill signal, clipped at
-`...[+N chars]`; elsewhere a `--- CALLS n:` line counts the calls it dropped. When a claim needs the clipped part,
-grep the `source` file, or query it with `sqlite3` when it is a database.
+`...[+N chars]`; elsewhere a `--- CALLS n:` line counts the calls it dropped.
+When a claim needs the clipped part, grep the `source` file, or query it with
+`sqlite3` when it is a database.
 
 ## Quotes
 
@@ -46,7 +48,9 @@ lines by their section instead; QUOTE lines are for session text.
    loaded.
 3. **Scope**: what it was applied to, and how big: files, tests, findings.
 4. **Fidelity**: walk the live version's steps and required output. For each,
-   did the agent do it, skip it, or bend it? Name the step.
+   did the agent do it, skip it, or bend it? Name the step. Tag a line
+   **keep** when the session shows it working: it steered the agent right, or
+   caught a problem.
 5. **Evidence effort**: what the agent verified by running something, against
    what it asserted from reading.
 6. **Quality problems**: wrong calls, missed issues, padded output. Tag each
@@ -54,6 +58,8 @@ lines by their section instead; QUOTE lines are for session text.
    - **harm**: the agent followed a skill line, and following it caused the
      problem.
    - **skipped**: the agent ignored or bent a skill line that would have
+     prevented it.
+   - **gap**: the skill is silent on it, and one added line would have
      prevented it.
    - **harness**: the agent's harness caused it (its sandbox, tools, or
      orchestrator), not the skill.
@@ -67,12 +73,25 @@ lines by their section instead; QUOTE lines are for session text.
    graded **strong** (a failure visible in this session that the change would
    have prevented) or **one-off** (plausible, but seen once or only inferred).
    Match the change to the tag: **harm** changes or removes the line,
-   **skipped** makes it stronger or more visible, a **missed trigger** edits
-   the description, and **harness** gets no skill change.
+   **skipped** makes it stronger or more visible, **gap** adds the line, a
+   **missed trigger** edits the description, and **harness** gets no skill
+   change.
 
 ## Report
 
 Write the report to your given path: one block per session, headed by its
-transcript filename, at most 400 words, QUOTE lines included. Finish with the
-suggestions from all your sessions in one list, each tagged with its grade, its
-cause tag, and the sessions that support it.
+transcript filename, at most 400 words, QUOTE lines included. Open each block
+with its summary line, a few words per field:
+
+```
+SESSION <transcript-filename> | <verdict> | <trigger> | <scope> | <reaction>
+```
+
+Finish with the suggestions from all your sessions in one list, each tagged
+with its grade, its cause tag, and the sessions that support it. List the
+**keep** lines after them.
+
+Done when your report passes the quote check,
+`python3 <skill-dir>/scripts/retro.py verify <manifest> <your report>`, where
+`<skill-dir>` is the folder above this brief. Fix or drop every `UNVERIFIED`
+quote it prints.

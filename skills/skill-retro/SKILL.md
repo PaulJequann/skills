@@ -29,8 +29,9 @@ python3 <skill-dir>/scripts/retro.py find <skill> --manifest <scratch>/manifest.
 
 It scans every Claude Code project, the OpenCode database, Codex live and
 archived sessions, Hermes state databases (backup profiles skipped), and Pi
-sessions. Subagent sessions fold into their root session. It matches on the
-lead sentence of every committed version of the skill body, so listings of
+sessions. Subagent sessions fold into their root session; Codex subagent
+rollouts are skipped, since each replays its parent's history. It matches on
+the lead sentence of every committed version of the skill body, so listings of
 installed skills never count.
 
 Each row carries:
@@ -59,7 +60,7 @@ python3 <skill-dir>/scripts/retro.py extract <scratch>/manifest.json <scratch>/t
 ```
 
 This writes one condensed transcript per `use` or `mention` session and prints
-batches of about 200K characters; raise `--batch-chars` when the batches
+batches of about 350K characters; raise `--batch-chars` when the batches
 outnumber the analysts you want to run. Each transcript keeps the whole
 conversation, with tool calls and outputs in a window after each skill signal
 and a one-line count of the calls elsewhere.
@@ -73,10 +74,13 @@ Dispatch one subagent per batch, in parallel, all in one message. Give each:
 - its transcript paths;
 - the skill's `SKILL.md` path and the repo path;
 - the user's question from step 1;
-- its report path, `<scratch>/reports/batch-<n>.md`.
+- the manifest path;
+- its report path, `<scratch>/reports/batch-<n>.md`;
+- its work directory, `<scratch>/work/batch-<n>/`.
 
 Pass paths rather than paraphrases, so every analyst reads the same text.
-When every report is written, check the quotes:
+Each analyst checks its own quotes. When every report is written, check them
+all together:
 
 ```bash
 python3 <skill-dir>/scripts/retro.py verify <scratch>/manifest.json <scratch>/reports/*.md
@@ -87,8 +91,14 @@ Done when verify passes, or you have dropped every claim that rests on an
 
 ## 5. Synthesize
 
-Build one table across all analyst reports: session, verdict, trigger, scope,
-and the user's reaction. Then group the suggestions into **themes**.
+Build the session table from the analysts' `SESSION` lines:
+
+```bash
+python3 <skill-dir>/scripts/retro.py table <scratch>/manifest.json <scratch>/reports/*.md
+```
+
+A `MISSING` row is a session no analyst reported; send it back before you go
+on. Then group the suggestions into **themes**.
 
 - A theme meets the evidence bar with support from two or more sessions, or
   from one session where the user had to correct a severe failure.
@@ -97,6 +107,8 @@ and the user's reaction. Then group the suggestions into **themes**.
 - A theme's cause tags decide its edit, by the analyst brief's **Suggested
   changes** rule. **Harness** problems stay out of the skill; list them for
   the user.
+- A **keep** line from two or more sessions stays, whatever else changes
+  around it.
 - Everything else is a one-off: report it, but leave the skill alone.
 
 Done when every suggestion sits in a theme or in the one-offs.

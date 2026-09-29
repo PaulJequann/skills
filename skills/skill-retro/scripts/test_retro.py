@@ -52,8 +52,9 @@ def write_jsonl(path, records):
     path.write_text("".join(json.dumps(r) + "\n" for r in records))
 
 
-def codex_meta():
-    return {"timestamp": TS, "type": "session_meta", "payload": {"id": "c1", "cwd": "/work", "originator": "codex_exec"}}
+def codex_meta(**extra):
+    return {"timestamp": TS, "type": "session_meta",
+            "payload": {"id": "c1", "cwd": "/work", "originator": "codex_exec", **extra}}
 
 
 def codex_msg(role, text):
@@ -95,8 +96,9 @@ class RetroTest(unittest.TestCase):
         self.assertEqual(len(found), 1, found)
         return found[0]
 
-    def codex(self, name, records):
-        write_jsonl(self.home / ".codex/sessions/2026/09/01" / name, [codex_meta(), codex_msg("developer", LISTING)] + records)
+    def codex(self, name, records, **meta):
+        write_jsonl(self.home / ".codex/sessions/2026/09/01" / name,
+                    [codex_meta(**meta), codex_msg("developer", LISTING)] + records)
 
     def claude(self, uuid, records, project="-work"):
         write_jsonl(self.home / ".claude/projects" / project / f"{uuid}.jsonl", records)
@@ -130,6 +132,13 @@ class RetroTest(unittest.TestCase):
         hit = self.only()
         self.assertEqual((hit["agent"], hit["kind"], hit["trigger"], hit["origin"]), ("codex", "use", "user", "codex_exec"))
         self.assertEqual(hit["first_user"], "$demo on your work")
+
+    def test_codex_subagent_replaying_its_parent_gets_no_row_of_its_own(self):
+        used = [codex_msg("user", "$demo on your work"), codex_msg("user", f"<skill>\n{BODY}</skill>")]
+        self.codex("rollout-parent.jsonl", used)
+        self.codex("rollout-fork.jsonl", used + [codex_msg("user", "research the API")],
+                   id="c2", parent_thread_id="c1", forked_from_id="c1")
+        self.assertEqual(self.only()["files"], [str(self.home / ".codex/sessions/2026/09/01/rollout-parent.jsonl")])
 
     def test_codex_self_read_of_skill_file_is_self_triggered_use(self):
         self.codex("rollout-a.jsonl", [codex_msg("user", "review the tests")]
@@ -299,6 +308,18 @@ class RetroTest(unittest.TestCase):
         self.assertEqual(count, 4)
         self.assertEqual([q for _, _, q in failed], ["the user loved it", "that verdict was wrong"])
 
+
+    def test_table_has_a_row_per_extracted_session_and_marks_unreported_ones(self):
+        self.codex("rollout-a.jsonl", [codex_msg("user", "$demo on your work")])
+        self.codex("rollout-b.jsonl", [codex_msg("user", "$demo please")], id="c2")
+        manifest = Path(self.tmp.name) / "manifest.json"
+        found = self.find()
+        retro.write_manifest("demo", found, manifest, repo=self.repo, home=self.home)
+        a, b = (retro.transcript_name(r) for r in found)
+        report = Path(self.tmp.name) / "report.md"
+        report.write_text(f"## {a}\nSESSION tx/{a} | real use | user | 1 PR, 3 threads | accepted\n")
+        self.assertEqual(retro.table(manifest, [report]),
+                         [(a, ["real use", "user", "1 PR, 3 threads", "accepted"]), (b, None)])
 
 if __name__ == "__main__":
     unittest.main()

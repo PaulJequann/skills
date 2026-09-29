@@ -4,6 +4,7 @@
   retro.py find <skill> [--repo DIR] [--home DIR] [--since YYYY-MM-DD] [--manifest FILE]
   retro.py extract <manifest> <outdir> [--kinds use,mention] [--batch-chars N]
   retro.py verify <manifest> <report>...
+  retro.py table <manifest> <report>...
 """
 
 import argparse
@@ -22,6 +23,7 @@ WRITE_TOOL = re.compile(r"edit|write|patch|str_replace", re.I)
 LIMITS = {"user": 6000, "assistant": 12000, "meta": 1500, "call": 400, "result": 600, "before": 600}
 DETAIL_AFTER = 150
 QUOTE = re.compile(r"^QUOTE (\S+) \| (.+)$", re.M)
+SESSION = re.compile(r"^SESSION (\S+) \| (.+)$", re.M)
 SKILL_TOOLS = ("Skill", "skill_view", "skill")
 
 Session = namedtuple("Session", "cwd origin events")
@@ -298,6 +300,15 @@ def classify(matcher, events):
     return {"kind": kind, "trigger": by, "signals": sorted(signals), "first_user": first_user}
 
 
+def codex_subagent(path):
+    """Codex subagent rollouts replay their parent's history, which has its own row."""
+    with open(path) as f:
+        try:
+            return bool((json.loads(f.readline()).get("payload") or {}).get("parent_thread_id"))
+        except ValueError:
+            return False
+
+
 def candidates(home):
     """Yield (agent, id, files) for every session store on this machine."""
     projects = home / ".claude/projects"
@@ -305,7 +316,7 @@ def candidates(home):
         yield "claude", main.stem, [main, *sorted(main.parent.glob(f"{main.stem}/subagents/*.jsonl"))]
     seen = set()
     for f in sorted((home / ".codex").glob("sessions/**/*.jsonl")) + sorted((home / ".codex").glob("archived_sessions/*.jsonl")):
-        if f.name not in seen:
+        if f.name not in seen and not codex_subagent(f):
             seen.add(f.name)
             yield "codex", f.stem, [f]
     for f in sorted((home / ".pi/agent/sessions").glob("**/*.jsonl")):
@@ -439,6 +450,14 @@ def verify(manifest, reports):
     return count, failed
 
 
+def table(manifest, reports, kinds=("use", "mention")):
+    """One row per extracted session: its SESSION line fields, or None when no report has one."""
+    lines = {Path(name).name: [f.strip() for f in rest.split(" | ")]
+             for report in reports for name, rest in SESSION.findall(Path(report).read_text())}
+    return [(transcript_name(r), lines.get(transcript_name(r)))
+            for r in json.loads(Path(manifest).read_text())["sessions"] if r["kind"] in kinds]
+
+
 def batches(paths, limit):
     groups, current, size = [], [], 0
     for path in sorted(paths, key=lambda p: -p.stat().st_size):
@@ -464,10 +483,13 @@ def main():
     e.add_argument("manifest")
     e.add_argument("outdir")
     e.add_argument("--kinds", default="use,mention")
-    e.add_argument("--batch-chars", type=int, default=200_000)
+    e.add_argument("--batch-chars", type=int, default=350_000)
     v = sub.add_parser("verify")
     v.add_argument("manifest")
     v.add_argument("reports", nargs="+")
+    t = sub.add_parser("table")
+    t.add_argument("manifest")
+    t.add_argument("reports", nargs="+")
     args = parser.parse_args()
 
     if args.cmd == "find":
@@ -489,6 +511,14 @@ def main():
             print(f"UNVERIFIED {report}: {name} | {quote}")
         print(f"{count - len(failed)}/{count} quotes verified")
         sys.exit(1 if failed else 0)
+    elif args.cmd == "table":
+        rows = table(args.manifest, args.reports)
+        print("| session | verdict | trigger | scope | reaction |\n|---|---|---|---|---|")
+        for name, fields in rows:
+            print(f"| {name} | {' | '.join(fields) if fields else 'MISSING'} |")
+        missing = sum(1 for _, fields in rows if not fields)
+        print(f"\n{len(rows) - missing}/{len(rows)} sessions reported")
+        sys.exit(1 if missing else 0)
     else:
         paths = extract_all(args.manifest, args.outdir, set(args.kinds.split(",")))
         for i, group in enumerate(batches(paths, args.batch_chars), 1):
