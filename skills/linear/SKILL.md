@@ -10,6 +10,39 @@ resolve the current repository from its Git remote, and use its configured team
 and exact `Repository/<Repository>` label. Use `setup-linear-workflow` when the
 routing itself must be created or repaired.
 
+## Access
+
+Use the `linearis` CLI. It reads `LINEAR_API_TOKEN` and prints JSON. Under an
+Agent Proxy launcher that variable holds a placeholder, and the proxy injects
+the real key at the network edge. Never read, print, or export a real key. A
+401 means the session's proxy connection predates the `linear` proxied
+service; restart the agent through its launcher instead of retrying.
+
+Always pass `--compact --fields`. Unpinned output is roughly fifty times larger.
+List results are `{"nodes": [...]}`, so prefix list fields with `nodes.`:
+
+```sh
+linearis --compact --fields nodes.identifier,nodes.title,nodes.state.name \
+  issues list --team <team> --assignee me --limit 25
+linearis --compact --fields identifier,title,description,state.name,labels.nodes.name \
+  issues read ABC-123
+linearis --compact --fields nodes.identifier,nodes.title \
+  issues search "proxy timeout" --team <team> --limit 10
+```
+
+- `--status` and `--cycle` filters require `--team`.
+- Record activity with `issues discuss <issue> --body <text>`; the `comments`
+  commands are deprecated.
+- `issues update --labels` replaces every label unless you also pass
+  `--label-mode add` or `--label-mode remove`. Replacing drops the
+  `Repository/` and readiness labels.
+- Create with `issues create <title> --team <team> --description "$(cat body.md)"`,
+  writing the body to a file first, and pass relationships with
+  `--parent-ticket`, `--blocks`, or `--blocked-by`.
+- Run `linearis <domain> usage` for anything else.
+- A mutation that fails or times out may still have been applied. Read the
+  record back before repeating it.
+
 ## Canonical record
 
 The issue body is the canonical current handoff. Keep it accurate, concise, and
