@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Retro"
+  short_description: "Improve a skill from its real session history"
+  default_prompt: "Use $skill-retro to review how $skeptical-test-audit has been used and improve it."
