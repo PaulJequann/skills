@@ -16,9 +16,9 @@ every claim must point back to the transcript.
   `git -C <repo> log --format='%h %cI' -- skills/<skill>/SKILL.md`, then
   `git -C <repo> show <sha>:skills/<skill>/SKILL.md`.
 
-Transcripts are condensed. Before the skill's first signal, only user and
-assistant text survive, with one-line tool calls; after it, calls and outputs
-are kept but clipped at `...[+N chars]`. When a claim needs the clipped part,
+Transcripts are condensed. User and assistant text survive throughout. Tool
+calls and outputs survive in a window after each skill signal, clipped at
+`...[+N chars]`; elsewhere a `--- CALLS n:` line counts the calls it dropped. When a claim needs the clipped part,
 grep the `source` file, or query it with `sqlite3` when it is a database.
 
 ## Quotes

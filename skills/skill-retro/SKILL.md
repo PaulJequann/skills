@@ -27,10 +27,11 @@ From the skills repo:
 python3 <skill-dir>/scripts/retro.py find <skill> --manifest <scratch>/manifest.json [--since YYYY-MM-DD]
 ```
 
-It scans every Claude Code project and the OpenCode database (subagent
-sessions folded into their parent), Codex live and archived sessions, Hermes
-state databases (backup profiles skipped), and Pi sessions, and matches on the lead sentence of every committed
-version of the skill body, so listings of installed skills never count.
+It scans every Claude Code project, the OpenCode database, Codex live and
+archived sessions, Hermes state databases (backup profiles skipped), and Pi
+sessions. Subagent sessions fold into their root session. It matches on the
+lead sentence of every committed version of the skill body, so listings of
+installed skills never count.
 
 Each row carries:
 
@@ -58,8 +59,10 @@ python3 <skill-dir>/scripts/retro.py extract <scratch>/manifest.json <scratch>/t
 ```
 
 This writes one condensed transcript per `use` or `mention` session and prints
-batches of about 200K characters. Each transcript keeps full tool detail from
-the skill's first signal on, and only conversation before it.
+batches of about 200K characters; raise `--batch-chars` when the batches
+outnumber the analysts you want to run. Each transcript keeps the whole
+conversation, with tool calls and outputs in a window after each skill signal
+and a one-line count of the calls elsewhere.
 
 ## 4. Analyse
 

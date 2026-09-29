@@ -101,15 +101,16 @@ class RetroTest(unittest.TestCase):
     def claude(self, uuid, records, project="-work"):
         write_jsonl(self.home / ".claude/projects" / project / f"{uuid}.jsonl", records)
 
-    def hermes_db(self, path, rows):
+    def hermes_db(self, path, rows, sessions=(("h1", None),)):
         path.parent.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(path)
-        db.execute("create table sessions (id text primary key, started_at real, cwd text, title text, source text)")
+        db.execute("create table sessions (id text primary key, started_at real, cwd text, title text, source text,"
+                   " parent_session_id text)")
         db.execute("create table messages (id integer primary key, session_id text, role text, content text,"
                    " tool_call_id text, tool_calls text, tool_name text, timestamp real)")
-        db.execute("insert into sessions values ('h1', 1788000000, '/work', 't', 'bytes')")
+        db.executemany("insert into sessions values (?, 1788000000, '/work', 't', 'bytes', ?)", sessions)
         db.executemany("insert into messages (session_id, role, content, tool_calls, tool_name, timestamp)"
-                       " values ('h1', ?, ?, ?, ?, 1788000000)", rows)
+                       " values (?, ?, ?, ?, ?, 1788000000)", [r if len(r) == 5 else ("h1", *r) for r in rows])
         db.commit()
         db.close()
 
@@ -200,6 +201,17 @@ class RetroTest(unittest.TestCase):
         self.assertEqual((hit["agent"], hit["kind"], hit["trigger"], hit["cwd"], hit["origin"]),
                          ("hermes", "use", "self", "/work", "bytes"))
 
+    def test_hermes_subagent_sessions_fold_into_their_root(self):
+        view = json.dumps([{"function": {"name": "skill_view", "arguments": '{"name":"demo"}'}}])
+        self.hermes_db(self.home / ".hermes/state.db", [
+            ("root", "user", "babysit the PR", None, None),
+            ("sub1", "user", "run $demo on CI", None, None),
+            ("sub1", "assistant", "", view, None),
+            ("sub2", "assistant", "", view, None),
+        ], sessions=[("root", None), ("sub1", "root"), ("sub2", "sub1")])
+        hit = self.only()
+        self.assertEqual((hit["id"], hit["kind"], hit["trigger"], hit["first_user"]), ("root", "use", "self", "babysit the PR"))
+
     def test_opencode_skill_tool_in_child_session_folds_into_root(self):
         db_path = self.home / ".local/share/opencode/opencode.db"
         db_path.parent.mkdir(parents=True)
@@ -250,11 +262,14 @@ class RetroTest(unittest.TestCase):
         hit = self.only()
         self.assertEqual((hit["kind"], hit["era"]), ("use", "pre"))
 
-    def test_extract_keeps_every_session_and_details_only_near_the_use(self):
+    def test_extract_keeps_every_session_and_details_only_near_each_signal(self):
         noise = codex_call("exec_command", {"cmd": "make lint"}, "lint output " * 50)
-        self.codex("rollout-2026-09-01T10-00-00-aaaa.jsonl", [codex_msg("user", "early work")] + noise * 20
+        self.codex("rollout-2026-09-01T10-00-00-aaaa.jsonl", [codex_msg("user", "early work"), codex_msg("assistant", "p" * 2000)]
+                   + noise * 20
                    + [codex_msg("user", "$demo on your work"), codex_msg("user", f"<skill>\n{BODY}</skill>")]
-                   + noise + [codex_msg("user", "that verdict was wrong")])
+                   + noise * 100 + [codex_msg("assistant", BODY)]
+                   + noise + [codex_msg("user", "that verdict was wrong")]
+                   + noise * 200 + codex_call("apply_patch", {}, "ok"))
         self.codex("rollout-2026-09-01T11-00-00-bbbb.jsonl", [codex_msg("user", "$demo please")])
         manifest = Path(self.tmp.name) / "manifest.json"
         retro.write_manifest("demo", self.find(), manifest, repo=self.repo, home=self.home)
@@ -263,8 +278,11 @@ class RetroTest(unittest.TestCase):
         self.assertEqual(len(paths), 2)
         text = max(paths, key=lambda p: p.stat().st_size).read_text()
         self.assertIn("that verdict was wrong", text)
-        self.assertEqual(text.count("--- OUT"), 1)
-        self.assertEqual(text.count("CALL exec_command"), 21)
+        self.assertIn("[+1400 chars]", text)
+        self.assertIn("CALLS 20: exec_command 20", text)
+        self.assertIn("CALLS 25: exec_command 25", text)
+        self.assertTrue(text.rstrip().endswith(", apply_patch 1"), text[-200:])
+        self.assertEqual(text.split("that verdict was wrong")[0].count("--- OUT"), 76)
 
     def test_verify_rejects_quotes_missing_from_the_session(self):
         self.codex("rollout-a.jsonl", [codex_msg("user", "$demo on your work"),

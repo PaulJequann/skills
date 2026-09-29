@@ -12,15 +12,15 @@ import re
 import sqlite3
 import subprocess
 import sys
-from collections import namedtuple
+from collections import Counter, namedtuple
 from datetime import datetime, timezone
 from pathlib import Path
 
 INJECTED = re.compile(r"\s*(<(?!command-)[\w-]+>|# AGENTS\.md)")
 REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.S)
 WRITE_TOOL = re.compile(r"edit|write|patch|str_replace", re.I)
-LIMITS = {"user": 6000, "assistant": 12000, "meta": 1500, "call": 800, "result": 1200}
-DETAIL_AFTER = 400
+LIMITS = {"user": 6000, "assistant": 12000, "meta": 1500, "call": 400, "result": 600, "before": 600}
+DETAIL_AFTER = 150
 QUOTE = re.compile(r"^QUOTE (\S+) \| (.+)$", re.M)
 SKILL_TOOLS = ("Skill", "skill_view", "skill")
 
@@ -143,18 +143,22 @@ def codex_session(path):
 
 
 def hermes_session(db, sid):
+    """A root session with its subagent sessions folded in."""
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     row = con.execute("select cwd, source from sessions where id = ?", (sid,)).fetchone() or (None, None)
     events = []
-    rows = con.execute("select role, content, tool_calls, tool_name, timestamp from messages"
-                       " where session_id = ? order by timestamp, id", (sid,))
-    for role, content, calls, tool, ts in rows:
+    rows = con.execute("with recursive tree(id) as (select ? union select s.id from sessions s"
+                       " join tree on s.parent_session_id = tree.id)"
+                       " select session_id, role, content, tool_calls, tool_name, timestamp from messages"
+                       " where session_id in (select id from tree) order by timestamp, id", (sid,)).fetchall()
+    for session, role, content, calls, tool, ts in rows:
         ts = iso(ts)
         if role == "tool":
             events.append(("result", content or "", tool, ts))
         elif role in ("user", "assistant"):
             if content:
-                events.append((user_role(content) if role == "user" else role, content, None, ts))
+                events.append(("assistant" if role != "user" else "meta" if session != sid else user_role(content),
+                               content, None, ts))
             try:
                 calls = json.loads(calls or "[]")
             except ValueError:
@@ -338,8 +342,10 @@ def find(skill, home, repo, since=None):
     for db in hermes_dbs(home):
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         pattern = f"%{skill}%"
-        sids = [r[0] for r in con.execute("select distinct session_id from messages where content like ? or tool_calls like ?",
-                                          (pattern, pattern))]
+        sids = [r[0] for r in con.execute("with recursive up(id, parent) as (select id, parent_session_id from sessions"
+                                          " where id in (select session_id from messages where content like ? or tool_calls like ?)"
+                                          " union select s.id, s.parent_session_id from sessions s join up on s.id = up.parent)"
+                                          " select id from up where parent is null", (pattern, pattern))]
         con.close()
         for sid in sids:
             keep("hermes", sid, [db])
@@ -372,23 +378,36 @@ def transcript_name(record):
 
 
 def extract(record, out, matcher):
-    """Condense one session: full detail from the first skill signal on, text only before it."""
+    """Condense one session: tool detail for a stretch after each skill signal, conversation elsewhere."""
     events = load(record["agent"], record["id"], record["files"]).events
-    hits = [i for i, e in enumerate(events) if matcher.signals(*e[:3]) & {"trigger", "skill-call", "body", "edit"}]
-    first, last = (hits[0], hits[-1] + DETAIL_AFTER) if hits else (0, len(events))
+    hits = [i for i, e in enumerate(events) if matcher.signals(*e[:3])]
+    detail = {i for h in hits for i in range(h, h + DETAIL_AFTER + 1)}
+    first, skipped = hits[0] if hits else 0, Counter()
+
+    def flush(w):
+        if skipped:
+            w.write(f"\n--- CALLS {sum(skipped.values())}: {', '.join(f'{t} {n}' for t, n in skipped.most_common())}\n")
+            skipped.clear()
+
     with open(out, "w") as w:
         w.write(f"# {record['agent']} {record['id']}\n\ncwd: {record['cwd']}  start: {record['start']}  "
                 f"kind: {record['kind']}  trigger: {record['trigger']}  era: {record['era']}  origin: {record['origin']}  "
                 f"signals: {', '.join(record['signals'])}\nsource: {' '.join(record['files'])}\n")
         for i, (role, text, tool, ts) in enumerate(events):
-            stamp, detail = (ts or "")[:19], first <= i <= last
+            stamp = (ts or "")[:19]
+            if role in ("call", "result") and i not in detail:
+                if role == "call":
+                    skipped[tool or "?"] += 1
+                continue
+            flush(w)
             if role == "call":
-                w.write(f"\n--- {stamp} CALL {tool}: {clip(text, LIMITS['call'] if detail else 100)}\n")
+                w.write(f"\n--- {stamp} CALL {tool}: {clip(text, LIMITS['call'])}\n")
             elif role == "result":
-                if detail:
-                    w.write(f"--- OUT{f' ({tool})' if tool else ''}: {clip(text, LIMITS['result'])}\n")
+                w.write(f"--- OUT{f' ({tool})' if tool else ''}: {clip(text, LIMITS['result'])}\n")
             else:
-                w.write(f"\n### {stamp} {role.upper()}\n{clip(text, LIMITS[role])}\n")
+                limit = LIMITS["before"] if i < first and role != "user" else LIMITS[role]
+                w.write(f"\n### {stamp} {role.upper()}\n{clip(text, limit)}\n")
+        flush(w)
 
 
 def extract_all(manifest, outdir, kinds):
