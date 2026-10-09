@@ -1,6 +1,6 @@
 ---
 name: paseo-orchestration
-description: Use for substantial research, workers, or fleet delegation.
+description: Use when requesting workers or delegating substantial work.
 ---
 
 # Paseo orchestration
@@ -10,16 +10,19 @@ launch from live profiles, and carry returned work through verification.
 
 ## When to use
 
-Load before choosing a delegation mechanism for substantial research,
-independent implementation tasks, long-running work, cross-machine execution,
-or a second opinion on a consequential decision. The user need not mention
-Paseo. Perform a small lookup, mechanical command, or tightly coupled edit
-directly when delegation adds no useful independence.
+Load whenever the user requests workers, including quick tasks, and before
+choosing a delegation mechanism for substantial research, independent
+implementation, long-running work, cross-machine execution, or a consequential
+second opinion. The user need not mention Paseo. Without a worker request,
+perform straightforward work directly when delegation adds no useful independence.
 
-Prefer Paseo for durable, profile-driven, user-visible delegation. Native
-subagents are suitable for short disposable subtasks without those needs, or a
-disclosed fallback when Paseo is unavailable. An explicit request for Paseo
-retains priority; report a blocker rather than silently switching systems.
+Requested workers use Paseo and live profiles by default. Complete profile
+discovery before choosing a model or substituting another delegation mechanism.
+An explicit request for native subagents overrides that default. Otherwise,
+native subagents are suitable for short disposable subtasks the parent chooses
+to delegate without a worker request. For requested workers, obtain the user's
+authorization before substituting native delegation; report a Paseo blocker
+rather than silently switching systems.
 
 ## Prerequisites
 
@@ -52,7 +55,9 @@ critical dependent work with the parent until prerequisites are available.
 Call `list_profiles` and read every profile's notes. Honor a named profile;
 otherwise match notes to the work, then materialize its settings exactly as the
 `paseo` skill specifies. Discover available providers and models when no profile
-fits, and disclose that fallback. Verify reasoning options rather than assuming
+fits, and obtain authorization for the proposed fallback before launch. If a
+named profile is missing or discovery fails, report the blocker rather than
+guessing its settings. Verify reasoning options rather than assuming
 that labels such as high or maximum are interchangeable across providers.
 
 A profile is launch configuration, not a persistent identity or a saved task
@@ -77,6 +82,19 @@ Finish this step with a justified profile, a verified target, and nonconflicting
 ownership for each task.
 
 ### 3. Brief and launch
+
+Before each launch, record the selected profile, the matching notes, and the
+effective provider/model, permission mode, reasoning option, and feature values.
+Compare the launch payload with the live profile using the `paseo` mapping.
+Preserve every configured value, including `modeId`; omit only absent values.
+A configured full-access mode must remain full-access, while a restricted
+profile must retain its restrictions. Runtime permissions do not expand the
+worker's authorized task scope.
+
+Launch only when the settings match, or the user has authorized specific
+overrides. If the transport cannot express a configured setting, report the
+blocker before launching. After creation, inspect effective settings through a
+supported read-back operation; report any mismatch or unavailable verification.
 
 Use [the worker briefing](templates/worker-brief.md). Supply context a fresh
 agent can actually access, required skills, exact scope, acceptance criteria,
@@ -138,8 +156,11 @@ worktree can disappear on workspace archival, so archival is not harmless cleanu
 
 ## Pitfalls
 
-- A cheaper model that needs repeated repair may cost more overall. Choose by
-  task fit and observed outcomes, not price or reasoning labels alone.
+- Treat profile notes as the human's model-selection policy. Use the profile
+  intended for routine work when its notes fit; reserve specialist or expensive
+  profiles for work their notes justify. If several profiles fit, prefer the
+  lower-cost option when cost is known; do not infer prices from model names.
+  Escalation after failed attempts requires a stated reason, not silent overrides.
 - Profile discovery and tool access must work on the selected daemon. Local
   availability does not prove remote availability.
 - A worker cannot expand permission, publication scope, or delegation budget.

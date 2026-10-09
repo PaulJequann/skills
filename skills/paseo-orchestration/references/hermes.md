@@ -24,16 +24,16 @@ https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp
 
 ## Route delegation deliberately
 
-The general Hermes recommendation to use native `delegate_task` for quick
-subtasks does not replace this user's Paseo preference for substantial,
-durable, profile-driven, or cross-machine work. Read the orchestration skill
-before choosing between them. Native delegation's tool access, nesting, and
-lifetime limits are properties of the current runtime; inspect its schema.
+Apply the main skill's worker-request routing rule before using native
+`delegate_task`, even for quick subtasks. Native delegation does not inherit
+Paseo profile settings. Read its schema for current tool access, nesting, and
+lifetime limits when the selected route permits it.
 
 If Paseo is blocked, distinguish an absent tool connection from an unavailable
-daemon or unsupported operation. Report the actual failure. Use a disclosed
-native fallback only when it preserves the task's duration, access, isolation,
-and visibility requirements. Never describe native children as Paseo agents.
+daemon or unsupported operation. Report the actual failure. For requested
+workers, obtain authorization for a native fallback and verify that it preserves
+the task's duration, access, isolation, and visibility requirements. Never
+describe native children as Paseo agents.
 
 ## Installation and activation
 
@@ -51,9 +51,9 @@ If fresh-session evaluation shows missed activation, add a short routing rule
 through the supported, source-managed global instruction mechanism after
 checking its scope. Suggested wording:
 
-> Prefer Paseo for substantial, durable, profile-driven, or cross-machine
-> delegation. Load `paseo-orchestration` before choosing a delegation mechanism.
-> Perform straightforward tasks directly.
+> Load `paseo-orchestration` when workers are requested, even for quick tasks,
+> or before delegating substantial work. Discover live Paseo profiles before
+> choosing worker launch settings. Otherwise perform straightforward tasks directly.
 
 Keep the playbook in the shared skill. A home-level AGENTS.md is not a portable
 global instruction mechanism. Do not alter other Hermes profiles or general

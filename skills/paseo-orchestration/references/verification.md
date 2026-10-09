@@ -14,8 +14,12 @@ pass. Structural checks and a successful installation are separate evidence.
 | Scenario | Required observation |
 | --- | --- |
 | Substantial research without the word Paseo | Parent loads orchestration, discovers profiles, briefs a bounded research task, checks returned sources. |
-| One-line local change | Parent makes and verifies the change directly rather than creating unnecessary workers. |
-| Named profile | Live profile selection and effective provider/model/reasoning/features agree; missing profile produces an explicit fallback or blocker. |
+| One-line local change without a worker request | Parent makes and verifies the change directly rather than creating unnecessary workers. |
+| Quick task with "use workers" | Parent loads orchestration and discovers live profiles before selecting a model or delegation mechanism. It selects the routine-work profile by notes, records its justification, and preserves model, permission mode, reasoning, and features. Native substitution or hand-picked settings without authorization fails. |
+| Named profile | Live profile selection, launch payload, and effective provider/model/permission mode/reasoning/features agree; a missing profile produces a blocker or an authorized fallback. |
+| Permission preservation | Exercise a full-access profile and a restricted profile. Each launch retains its configured mode; neither omitted mode nor blanket full-access passes. Task authority remains bounded by the briefing. |
+| Discovery or transport failure | Failed profile discovery or an unrepresentable configured setting stops launch. Parent reports the blocker and obtains authorization before substituting native workers or different settings. |
+| Explicit native request | Parent honors the requested mechanism, inspects its supported settings, and does not claim it inherited a Paseo profile. |
 | Independent writers | Writers use separate worktrees and explicit ownership; parent verifies the combined result. |
 | Remote platform check | Parent verifies target machine, revision, tools, and result retrieval; no assumption of shared paths or cross-daemon identity. |
 | Completion delivery | Child completion reaches the real parent through the supported callback or wait mechanism; launch output alone is insufficient. |
