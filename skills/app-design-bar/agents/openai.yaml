@@ -1,4 +1,4 @@
 interface:
-  display_name: "Mobbin app design"
-  short_description: "Build mobile and web interfaces that hold up next to real products"
-  default_prompt: "Use $mobbin-app-design to design, build, and verify this screen to a shipping-quality bar."
+  display_name: "App design bar"
+  short_description: "Build mobile app screens that hold up next to real shipping products"
+  default_prompt: "Use $app-design-bar to design, build, and verify this screen to a shipping-quality bar."

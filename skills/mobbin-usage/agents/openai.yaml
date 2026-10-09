@@ -1,7 +1,7 @@
 interface:
   display_name: "Mobbin research"
   short_description: "Study real mobile and web UI references, then build from them"
-  default_prompt: "Use $mobbin-usage to research real screens on Mobbin, then hand the findings to mobbin-app-design."
+  default_prompt: "Use $mobbin-usage to research real screens on Mobbin, then hand the findings to app-design-bar."
 
 dependencies:
   tools:

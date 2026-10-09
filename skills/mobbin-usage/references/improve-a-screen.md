@@ -7,7 +7,7 @@ shipping today, verified by looking at it, not by reading the diff.
 ## 1. Diagnose before searching
 
 Run the screen and study it against the definition of done in
-`mobbin-app-design`. Name the three worst deficits precisely, as checkable
+`app-design-bar`. Name the three worst deficits precisely, as checkable
 statements:
 
 - "No hierarchy. Three text rows at the same weight and size."
@@ -36,21 +36,21 @@ Rewording matters. "Streak statistics" and "weekly progress with bars" return
 overlapping but not identical sets, and the second phrasing often reaches
 products the first missed.
 
-**The intent sweep.** One or two deep searches, spent on what vocabulary cannot
-find:
+**The intent sweep.** Deep searches, aimed at what vocabulary cannot find:
 
 ```
 search_screens(query="calm dark stats dashboard where one number dominates and everything else is quiet",
                platform="ios", mode="deep")
 ```
 
-Style words work here and only here. "Calm" and "quiet" are useless in standard
-mode because they match no element, and useful in deep mode because the
-pipeline scores intent. That is what the 5 credits buy.
+Style words work here. "Calm" and "quiet" match no element in standard mode,
+and in deep mode they return screens that actually look calm, because the
+pipeline scores intent.
 
-Save everything into `research/<category>/`, with the query recorded beside
-each screen. Aim for 30 or more across both sweeps, then pick the 5 to 8 that
-actually bear on your deficits and write down why each one earns its place.
+Sheet each search and write its notes before the next one, per "Context
+budget" in the skill. Aim for 30 or more on-target screens across both sweeps,
+then pick the 5 to 8 that actually bear on your deficits and write down why
+each one earns its place.
 
 For a website or marketing surface, run the vocabulary sweep with
 `platform: "web"` and add `search_sections` for the section you are fixing.
@@ -71,11 +71,12 @@ cannot be checked, cut it.
 
 ## 4. Rebuild and iterate
 
-1. Implement against the spec using **mobbin-app-design**.
+1. Implement against the spec using **app-design-bar**.
 2. Generate asset gaps with the best image model available, one style system
    across the whole set.
 3. Screenshot, compare side by side with your top references, fix, repeat.
-   Record the motion and watch it twice, once at speed and once frame by frame.
+   Record the motion and read it as frames, per the motion reference in
+   **app-design-bar**.
    Check both themes, large type sizes, and reduced motion.
 4. Stop when the honest side-by-side reads at least as good as the best
    reference. Not "better than before", which is a low bar. If it does not
@@ -90,8 +91,8 @@ carried across.
 
 If the screen is a sheet, a modal, or a step behind a one-way door, verify the
 presentation matches what it actually is. Use `search_flows` to see how winners
-chain the surrounding steps, and remember that flow previews are a sample, so
-follow the `mobbin_url` when the chaining is what you need to see.
+chain the surrounding steps. Sheet the chosen flows from
+`screens[]` in `position` order, because the inline previews skip steps.
 
 Finally, ask what back does from this screen, on each platform the product
 ships. It is the part no screenshot shows and every user finds in ten seconds.

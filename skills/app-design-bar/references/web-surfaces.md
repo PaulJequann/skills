@@ -1,8 +1,22 @@
 # Web surfaces
 
-Marketing pages, pricing, and product sites have their own conventions, and
-Mobbin covers them. `search_sections` searches website sections, so study real
+Any screen that runs in a browser: in-product web apps, marketing pages,
+pricing, and product sites. They have their own conventions, and Mobbin covers
+them. `search_sections` searches website sections, so study real
 pricing pages and footers rather than inventing them.
+
+## Stack baseline
+
+Match the project when it already has one.
+
+- Semantic HTML first, because it carries focus order, labels, and roles for
+  free. A div with a click handler is a defect, not a style choice.
+- The framework the project already uses for routing. Do not introduce a
+  second router to build one page.
+- Real CSS for layout. Flexbox and grid, with logical properties so
+  internationalization does not need a rewrite.
+- Design tokens as custom properties, so a theme change is one edit rather than
+  a find-and-replace.
 
 ## What to research with which tool
 
@@ -14,9 +28,11 @@ pricing pages and footers rather than inventing them.
 | A full page, to see how sections are ordered | `search_screens` with `platform: "web"` |
 | An in-product web app screen, such as a dashboard | `search_screens` with `platform: "web"` |
 
-Run the vocabulary sweep on standard mode first, because section names are
-conventional words that match well. Spend a deep search only when the question
-is about intent, such as "pricing page that de-emphasises the middle tier".
+Section names are conventional words that match well, so `search_sections`
+and standard-mode screen searches handle the sweep. When the question is about
+strategy rather than parts, such as "pricing page that steers users toward the
+middle tier", run a deep `search_screens` with `platform: "web"`, which ranks
+that kind of question far better.
 
 ## Section order
 
@@ -51,7 +67,32 @@ The native fidelity laws do not transfer. These do.
 - **Images reserve their space.** Set width and height, or an aspect ratio, so
   the page does not shift while it loads.
 - **The viewport is not fixed.** Test at 375 px and at 1440 px, and at 200
-  percent text zoom. Clipping at any of the three is a defect.
+  percent text zoom. Content reflows at all three rather than clipping.
+- **The user's rendering choices win.** Honour `prefers-reduced-motion`,
+  `prefers-color-scheme`, and the user's base font size, and leave zoom on.
+- **One breakpoint system, stated.** Define the breakpoints once and name them.
+  Ad-hoc media queries at arbitrary widths read as assembled.
+- **Targets stay reachable.** Interactive targets are at least 24 by 24 CSS
+  pixels with spacing, and primary actions are larger. Mobile web gets the
+  mobile target rule.
+
+## Routing and state
+
+1. **URL is state.** Anything a user would share, bookmark, or reload into goes
+   in the URL: filters, search terms, pagination, the open tab. A reload that
+   loses the user's place is a defect.
+2. **Links are links.** Navigation uses anchors with real hrefs so that
+   middle-click, copy link, and open in new tab work. A router call on a
+   click handler alone breaks all three.
+3. **Back and forward both work.** The browser's one control is not decoration,
+   and intercepting it to run a modal close is a finding unless the URL
+   changed.
+4. **Loading is a state, not a spinner.** Reserve the layout, then fill it.
+   A full-page spinner for a partial update throws away the page the user was
+   reading.
+5. **Errors reach the user, loudly or not at all.** A failed action either
+   surfaces an inline message the user can act on, or retries in the
+   background. Silent failure is the worst option and the most common.
 
 ## Performance on the web
 

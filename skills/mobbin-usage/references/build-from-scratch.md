@@ -29,9 +29,10 @@ search_screens(query="<screen type, with the elements you expect>",
                platform="ios", mode="standard", limit=20)
 ```
 
-Budget roughly five to ten screens per type, from different products. Render
-every image. As you go, build `research/<category>/notes.md` with the
-`mobbin_url` and the query beside each screen.
+Study 10 or more screens per type, from different products. Study
+them through contact sheets, per "Context budget" in the skill, and write
+`research/<category>/notes.md` after each sheet, with the `mobbin_url` and the
+query beside each screen.
 
 You are extracting the convention, so track:
 
@@ -49,23 +50,22 @@ Write the cross-product summary into `patterns.md`: what every product does
 ## Phase 3: go deep on the decisive questions
 
 Standard search matches words. When the question is about intent rather than
-vocabulary, spend the 5 credits:
+vocabulary, use deep search, which reads intent:
 
 ```
 search_screens(query="onboarding where the user can skip a step but finish setup later",
                platform="ios", mode="deep")
 ```
 
-Deep is worth it for a question like "how do winners handle a user who abandons
-the paywall and comes back", where no single element name finds the answer.
-Keep it to the two or three questions that decide your design. Budget check: a
-handful of deep searches per task is normal; twenty is a problem, and there is
-no balance tool to warn you.
+Deep is the right tool for a question like "how do winners handle a user who
+abandons the paywall and comes back", where no single element name finds the
+answer. Run one for every question that decides your design.
 
 For journeys, switch tools rather than modes:
 
 ```
-search_flows(query="onboarding for a fitness app, with a goal question and a trial paywall")
+search_flows(query="onboarding for a fitness app, with a goal question and a trial paywall",
+             platform="ios")
 search_sections(query="pricing page with three tiers and an annual toggle")   # web
 ```
 
@@ -77,7 +77,7 @@ From `patterns.md`, write the spec the build will follow. It has four parts:
 2. **Per screen**, the skeleton you adopted and the reference that proves it.
 3. **Navigation and routing map.** For every screen, what it is and what back
    does from it, including the one-way doors. The rules come from
-   `mobbin-app-design`; the evidence comes from the flows you studied.
+   `app-design-bar`; the evidence comes from the flows you studied.
 4. **The opening.** The thing all the winners do badly, which is where your
    product earns its place.
 
@@ -94,7 +94,7 @@ For every screen, in journey order:
 1. Re-open your notes and the downloaded references for that screen type.
    For gaps, run another standard search, and a deep one only if the gap is
    about intent.
-2. Implement following **mobbin-app-design** end to end: platform fidelity,
+2. Implement following **app-design-bar** end to end: platform fidelity,
    native controls, motion with the platform's own curves, and boring state.
 3. Fill asset gaps with the best image model available at high quality, one
    style system for the whole product, per that skill's asset reference.
